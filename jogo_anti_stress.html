@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Anti-Stress: Estoura as Bolhinhas 🫧</title>
+  <meta name="description" content="Mini jogo anti-stress simples: estoura bolhinhas, respira fundo e relaxa." />
+  <style>
+    :root {
+      --bg1: #eff6ff; /* azul muito claro */
+      --bg2: #f8fafc; /* quase branco */
+      --ink: #0f172a; /* cinza-azulado escuro */
+      --muted: #64748b;
+      --brand: #60a5fa; /* azul suave */
+      --ok: #34d399; /* verde menta */
+      --danger: #ef4444; /* vermelho suave */
+      --glass: rgba(255, 255, 255, 0.55);
+      --glass-stroke: rgba(255, 255, 255, 0.65);
+      --shadow: 0 10px 30px rgba(2, 6, 23, 0.08);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg1: #0b1220;
+        --bg2: #0a0f1a;
+        --ink: #e5e7eb;
+        --muted: #94a3b8;
+        --brand: #60a5fa;
+        --ok: #34d399;
+        --danger: #f87171;
+        --glass: rgba(15, 23, 42, 0.4);
+        --glass-stroke: rgba(255, 255, 255, 0.12);
+        --shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      }
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: ui-rounded, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      color: var(--ink);
+      background: radial-gradient(1200px 800px at 30% -10%, var(--bg1), var(--bg2)) fixed;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      min-height: 100%;
+    }
+
+    header {
+      display: flex; gap: 12px; align-items: center; justify-content: space-between;
+      padding: 12px 16px; position: sticky; top: 0; z-index: 10;
+      backdrop-filter: saturate(120%) blur(8px);
+      background: linear-gradient(to bottom, var(--glass), transparent);
+      border-bottom: 1px solid var(--glass-stroke);
+    }
+
+    .title {
+      display: flex; align-items: center; gap: 10px;
+      font-weight: 700; letter-spacing: 0.2px;
+    }
+
+    .controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+    button, .pill {
+      appearance: none; border: 1px solid var(--glass-stroke);
+      background: var(--glass); color: var(--ink);
+      padding: 10px 14px; border-radius: 999px; cursor: pointer;
+      box-shadow: var(--shadow);
+      transition: transform .06s ease, background .2s ease;
+      font-weight: 600; font-size: 14px;
+    }
+    button:hover { transform: translateY(-1px); }
+    button:active { transform: translateY(0); }
+
+    .pill { font-weight: 700; }
+    .pill.ok { border-color: rgba(52,211,153,.4); }
+
+    main { position: relative; display: grid; place-items: center; padding: 16px; }
+
+    .board {
+      position: relative;
+      width: min(900px, 96vw); height: min(70vh, 640px);
+      background: linear-gradient(180deg, rgba(255,255,255,0.6), rgba(255,255,255,0.35));
+      border: 1px solid var(--glass-stroke);
+      border-radius: 24px; overflow: hidden; box-shadow: var(--shadow);
+      isolation: isolate;
+    }
+
+    .hud {
+      position: absolute; inset: 12px; display: flex; justify-content: space-between; pointer-events: none;
+      font-weight: 700; color: var(--muted);
+    }
+    .hud .left, .hud .right { display: flex; gap: 8px; align-items: center; }
+    .hud .chip {
+      pointer-events: auto;
+      background: var(--glass); border: 1px solid var(--glass-stroke); border-radius: 999px;
+      padding: 6px 12px; display: inline-flex; gap: 8px; align-items: center;
+      box-shadow: var(--shadow);
+    }
+
+    .bubble {
+      position: absolute; width: var(--size); height: var(--size);
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.95), rgba(255,255,255,0.3) 40%, rgba(255,255,255,0.15) 60%, rgba(255,255,255,0.08) 70%, rgba(255,255,255,0.0) 75%),
+                  radial-gradient(circle at 70% 70%, rgba(255,255,255,0.35), rgba(255,255,255,0.0) 60%);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.6), 0 8px 20px rgba(2,6,23,0.12);
+      transform: translate(-50%, -50%);
+      animation: float var(--dur) linear forwards;
+      will-change: transform, opacity;
+    }
+
+    @keyframes float {
+      from { transform: translate(var(--x), var(--startY)) scale(1); opacity: 0.9; }
+      to   { transform: translate(var(--x), var(--endY)) scale(1.06); opacity: 0; }
+    }
+
+    .pop {
+      animation: pop 220ms ease-out forwards;
+    }
+    @keyframes pop {
+      0% { transform: translate(var(--x), var(--y)) scale(1); opacity: 1; filter: saturate(110%); }
+      60% { transform: translate(var(--x), var(--y)) scale(1.25); opacity: .8; }
+      100% { transform: translate(var(--x), var(--y)) scale(0.2); opacity: 0; }
+    }
+
+    footer { text-align: center; padding: 12px 16px; color: var(--muted); font-size: 13px; }
+
+    /* Acessibilidade / reduz animação */
+    @media (prefers-reduced-motion: reduce) {
+      .bubble { animation-duration: calc(var(--dur) * 1.8); }
+      .pop { animation-duration: 140ms; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="title" aria-label="Anti-Stress: Estoura as Bolhinhas">
+      <span style="font-size: 22px">🫧</span>
+      <span>Anti‑Stress: Estoura as Bolhinhas</span>
+    </div>
+    <div class="controls">
+      <button id="toggleSound" aria-pressed="false" title="Ativar/Desativar som">🔈 Som</button>
+      <button id="slowMode" aria-pressed="false" title="Modo lento / relax">🌿 Modo Lento</button>
+      <button id="reset" title="Reiniciar pontuação">🔄 Reiniciar</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="board" id="board" role="application" aria-label="Tabuleiro do jogo: estoure bolhinhas para relaxar.">
+      <div class="hud" aria-hidden="true">
+        <div class="left">
+          <div class="chip" id="scoreChip">Pontuação: <span id="score">0</span></div>
+          <div class="chip">Melhor: <span id="best">0</span></div>
+        </div>
+        <div class="right">
+          <div class="chip">Tempo: <span id="time">3:00</span></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    Dica: Respira fundo enquanto estouras 5 bolhinhas. Repete. ✨
+  </footer>
+
+  <script>
+    // ---- Estado e utilitários ----
+    const board = document.getElementById('board');
+    const scoreEl = document.getElementById('score');
+    const bestEl = document.getElementById('best');
+    const timeEl = document.getElementById('time');
+    const btnSound = document.getElementById('toggleSound');
+    const btnSlow = document.getElementById('slowMode');
+    const btnReset = document.getElementById('reset');
+
+    let score = 0;
+    let best = Number(localStorage.getItem('antiStressBest') || 0);
+    bestEl.textContent = best;
+
+    const sessionSeconds = 180; // 3 minutos relax
+    let remaining = sessionSeconds;
+    let running = true;
+    let slow = false;
+    let soundOn = false;
+
+    // WebAudio simples para pop
+    let audioCtx;
+    function ensureAudio() {
+      if (!soundOn) return;
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+    }
+    function popSound() {
+      if (!soundOn || !audioCtx) return;
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      o.type = 'triangle';
+      o.frequency.value = 420 + Math.random() * 180;
+      g.gain.setValueAtTime(0.08, audioCtx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.12);
+      o.connect(g).connect(audioCtx.destination);
+      o.start();
+      o.stop(audioCtx.currentTime + 0.12);
+    }
+
+    // ---- Bolhinhas ----
+    const rnd = (min, max) => Math.random() * (max - min) + min;
+
+    function spawnBubble() {
+      if (!running) return;
+      const b = document.createElement('div');
+      b.className = 'bubble';
+
+      // Tamanho, posição e duração
+      const size = rnd(34, 96) * (slow ? 1.15 : 1);
+      const x = rnd(8, board.clientWidth - 8);
+      const startY = board.clientHeight + size; // começa fora de baixo
+      const endY = -size * 0.6; // termina fora de cima
+      const dur = rnd(7, 14) * (slow ? 1.6 : 1);
+
+      b.style.setProperty('--size', size + 'px');
+      b.style.setProperty('--x', `${x}px`);
+      b.style.setProperty('--startY', `${startY}px`);
+      b.style.setProperty('--endY', `${endY}px`);
+      b.style.setProperty('--dur', `${dur}s`);
+
+      // Guardar Y/X para animação pop
+      b.dataset.x = x;
+      b.dataset.y = rnd(board.clientHeight * .35, board.clientHeight * .8);
+
+      // Remover quando terminar de flutuar
+      b.addEventListener('animationend', () => b.remove());
+
+      b.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        // ponto do clique para animação pop
+        const rect = board.getBoundingClientRect();
+        const y = e.clientY - rect.top;
+        b.style.setProperty('--y', y + 'px');
+        b.classList.add('pop');
+        // pontua e som
+        score++;
+        scoreEl.textContent = score;
+        ensureAudio();
+        popSound();
+        // vibração leve (se suportado)
+        if (navigator.vibrate) navigator.vibrate(8);
+        // remover após pop
+        setTimeout(() => b.remove(), 240);
+      }, { passive: false });
+
+      board.appendChild(b);
+    }
+
+    // Spawner periódico
+    let spawnTimer;
+    function startSpawning() {
+      clearInterval(spawnTimer);
+      const base = slow ? 650 : 450; // ms
+      spawnTimer = setInterval(() => {
+        // quantidade variável por "onda" para sensação zen
+        const count = Math.random() < 0.4 ? 2 : 1;
+        for (let i = 0; i < count; i++) {
+          spawnBubble();
+        }
+      }, base);
+    }
+
+    // ---- Timer de sessão ----
+    function formatTime(s) {
+      const m = Math.floor(s / 60);
+      const r = s % 60;
+      return `${m}:${r.toString().padStart(2,'0')}`;
+    }
+    timeEl.textContent = formatTime(remaining);
+
+    let tick;
+    function startTimer() {
+      clearInterval(tick);
+      tick = setInterval(() => {
+        if (!running) return;
+        remaining--;
+        timeEl.textContent = formatTime(remaining);
+        if (remaining <= 0) {
+          endSession();
+        }
+      }, 1000);
+    }
+
+    function endSession() {
+      running = false;
+      clearInterval(spawnTimer);
+      clearInterval(tick);
+      if (score > best) {
+        best = score; localStorage.setItem('antiStressBest', String(best));
+        bestEl.textContent = best;
+      }
+      // Mensagem suave
+      const msg = document.createElement('div');
+      msg.role = 'status';
+      msg.style.position = 'absolute';
+      msg.style.inset = '0';
+      msg.style.display = 'grid';
+      msg.style.placeItems = 'center';
+      msg.style.background = 'linear-gradient(180deg, rgba(255,255,255,0.6), rgba(255,255,255,0.15))';
+      msg.style.backdropFilter = 'blur(2px)';
+      msg.innerHTML = `<div style="text-align:center; padding:22px 18px; border-radius:18px; background: var(--glass); border: 1px solid var(--glass-stroke); box-shadow: var(--shadow)">
+        <div style="font-size:22px; font-weight:800; margin-bottom:6px">Boa! ✨</div>
+        <div style="color:var(--muted); margin-bottom:14px">Sessão terminada. Pontuação: <b>${score}</b>${score>best? ' (novo recorde!)':''}</div>
+        <button id="again" class="pill ok">Respirar e jogar de novo</button>
+      </div>`;
+      board.appendChild(msg);
+      document.getElementById('again').addEventListener('click', () => {
+        msg.remove();
+        resetSession();
+      });
+    }
+
+    function resetSession() {
+      score = 0; scoreEl.textContent = '0';
+      remaining = sessionSeconds;
+      timeEl.textContent = formatTime(remaining);
+      running = true;
+      // limpar bolhas que sobraram
+      [...board.querySelectorAll('.bubble')].forEach(n => n.remove());
+      startSpawning();
+      startTimer();
+    }
+
+    // ---- Controles ----
+    btnReset.addEventListener('click', () => {
+      best = Math.max(best, score);
+      localStorage.setItem('antiStressBest', String(best));
+      bestEl.textContent = best;
+      resetSession();
+    });
+
+    btnSound.addEventListener('click', () => {
+      soundOn = !soundOn;
+      btnSound.setAttribute('aria-pressed', String(soundOn));
+      btnSound.textContent = soundOn ? '🔊 Som' : '🔈 Som';
+      if (soundOn) {
+        ensureAudio();
+        popSound();
+      }
+    });
+
+    btnSlow.addEventListener('click', () => {
+      slow = !slow;
+      btnSlow.setAttribute('aria-pressed', String(slow));
+      btnSlow.textContent = slow ? '🧘 Modo Lento' : '🌿 Modo Lento';
+      startSpawning(); // recomeça com novo ritmo
+    });
+
+    // Início
+    startSpawning();
+    startTimer();
+
+    // Acessibilidade: espaço/enter estoura a bolha mais próxima do centro
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== ' ' && e.key !== 'Enter') return;
+      const bubbles = [...document.querySelectorAll('.bubble')];
+      if (!bubbles.length) return;
+      const rect = board.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      bubbles.sort((a,b) => {
+        const ax = parseFloat(a.style.getPropertyValue('--x'));
+        const ay = parseFloat(a.style.getPropertyValue('--y')|| (rect.height/2));
+        const bx = parseFloat(b.style.getPropertyValue('--x'));
+        const by = parseFloat(b.style.getPropertyValue('--y')|| (rect.height/2));
+        const da = (ax - cx + rect.left)**2 + (ay - cy + rect.top)**2;
+        const db = (bx - cx + rect.left)**2 + (by - cy + rect.top)**2;
+        return da - db;
+      });
+      const target = bubbles[0];
+      if (target) {
+        const evt = new PointerEvent('pointerdown', { bubbles: true, clientX: cx, clientY: cy });
+        target.dispatchEvent(evt);
+      }
+    });
+  </script>
+</body>
+</html>

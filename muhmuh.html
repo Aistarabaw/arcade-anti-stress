@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MuhMuh — Pote da Gratidão</title>
+  <meta name="description" content="Escreve pequenas coisas boas do teu dia e guarda-as num pote virtual.">
+  <style>
+    :root{
+      --bg1:#ecfeff; --bg2:#f0f9ff; --ink:#0f172a; --muted:#64748b; --stroke: rgba(255,255,255,.7);
+      --card: rgba(255,255,255,.8); --shadow: 0 10px 30px rgba(2,6,23,.08); --accent:#06b6d4;
+    }
+    @media (prefers-color-scheme: dark){
+      :root{ --bg1:#0b1220; --bg2:#0a0f1a; --ink:#e5e7eb; --muted:#94a3b8; --stroke: rgba(255,255,255,.12); --card: rgba(15,23,42,.5); --shadow: 0 12px 36px rgba(0,0,0,.35); --accent:#22d3ee; }
+    }
+    *{box-sizing:border-box} html,body{height:100%}
+    body{margin:0; font-family: ui-rounded, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      color:var(--ink); background: radial-gradient(1200px 800px at 30% -10%, var(--bg1), var(--bg2)) fixed;
+      display:grid; grid-template-rows:auto 1fr auto; min-height:100%;}
+    header{display:flex; align-items:center; gap:12px; padding:12px 16px; position:sticky; top:0; z-index:10;
+      backdrop-filter: saturate(120%) blur(8px); background: linear-gradient(to bottom, rgba(255,255,255,.4), transparent); border-bottom:1px solid var(--stroke)}
+    .brand{display:flex; gap:10px; align-items:center; font-weight:800}
+    main{display:grid; place-items:center; padding:16px}
+    .wrap{width:min(900px,96vw); display:grid; gap:16px}
+    .panel{padding:18px; border-radius:18px; background:var(--card); border:1px solid var(--stroke); box-shadow: var(--shadow);}
+    .controls{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
+    .pill{appearance:none; border:1px solid var(--stroke); background:rgba(255,255,255,.65); padding:10px 14px; border-radius:999px; cursor:pointer; font-weight:700}
+    textarea{width:100%; min-height:90px; border-radius:12px; border:1px solid var(--stroke); padding:10px 12px; background:rgba(255,255,255,.65); font-size:15px}
+    .list{display:grid; gap:10px}
+    .note{padding:10px 12px; border-radius:12px; background:rgba(255,255,255,.65); border:1px solid var(--stroke); display:flex; justify-content:space-between; align-items:center; gap:10px}
+    .note small{color:var(--muted)}
+    footer{padding:14px 16px; color:var(--muted); text-align:center; font-size:13px}
+  </style>
+</head>
+<body>
+  <header><div class="brand"><span>🐮</span><span>MuhMuh — Pote da Gratidão</span></div></header>
+  <main>
+    <div class="wrap">
+      <section class="panel">
+        <b>O que correu bem hoje?</b>
+        <p class="muted" style="color:var(--muted)">Escreve 1–3 coisinhas (mesmo pequenas). Guarda no pote. Nos dias cinzentos, abre o pote e relê.</p>
+        <textarea id="txt" placeholder="Ex.: Tomei um café quentinho ao sol ☀️"></textarea>
+        <div class="controls">
+          <button class="pill" id="add">➕ Adicionar ao pote</button>
+          <button class="pill" id="export">⬇️ Exportar .txt</button>
+          <button class="pill" id="clear">🧹 Limpar pote</button>
+        </div>
+      </section>
+      <section class="panel">
+        <b>Pote</b>
+        <div class="list" id="list"></div>
+      </section>
+    </div>
+  </main>
+  <footer>Gratidão treina o cérebro para notar o bom. Um dia de cada vez. 🫶</footer>
+
+  <script>
+    const txt = document.getElementById('txt');
+    const listEl = document.getElementById('list');
+    let jar = JSON.parse(localStorage.getItem('muhmuhJar')||'[]');
+    function render(){
+      listEl.innerHTML = '';
+      jar.forEach((item, idx)=>{
+        const row = document.createElement('div'); row.className='note';
+        const left = document.createElement('div');
+        left.innerHTML = `<div>${item.text}</div><small>${new Date(item.ts).toLocaleString()}</small>`;
+        const del = document.createElement('button'); del.className='pill'; del.textContent='✖️'; del.title='Remover';
+        del.addEventListener('click', ()=>{ jar.splice(idx,1); save(); render(); });
+        row.appendChild(left); row.appendChild(del); listEl.appendChild(row);
+      });
+    }
+    function save(){ localStorage.setItem('muhmuhJar', JSON.stringify(jar)); }
+    function confetti(x=window.innerWidth/2,y=window.innerHeight/2){
+      const n = 24;
+      for(let i=0;i<n;i++){ const s = document.createElement('div'); s.style.position='fixed'; s.style.left=x+'px'; s.style.top=y+'px'; s.style.width='8px'; s.style.height='8px'; s.style.background='hsl('+Math.floor(Math.random()*360)+' 90% 60%)'; s.style.borderRadius='2px'; s.style.pointerEvents='none'; s.style.zIndex=9999; document.body.appendChild(s); const dx=(Math.random()-0.5)*2*120, dy=(Math.random()-1.2)*160, rot=(Math.random()*360)+'deg'; s.animate([{transform:`translate(0,0) rotate(0)` , opacity:1},{transform:`translate(${dx}px, ${dy}px) rotate(${rot})`, opacity:0}],{duration:900+Math.random()*500, easing:'cubic-bezier(.2,.8,.2,1)'}).onfinish=()=>s.remove(); }
+      if(navigator.vibrate) navigator.vibrate(20);
+    }
+    document.getElementById('add').addEventListener('click', (e)=>{
+      const v = txt.value.trim(); if(!v) return;
+      jar.unshift({text:v, ts: Date.now()}); save(); render(); txt.value=''; confetti(e.clientX||innerWidth/2, e.clientY||innerHeight/2);
+    });
+    document.getElementById('clear').addEventListener('click', ()=>{ if(confirm('Limpar o pote?')){ jar=[]; save(); render(); }});
+    document.getElementById('export').addEventListener('click', ()=>{
+      const content = jar.map(x=>`- ${x.text} (${new Date(x.ts).toLocaleString()})`).join('\n');
+      const blob = new Blob([content||'Pote vazio 💙'], {type:'text/plain;charset=utf-8'});
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download='pote_gratidao.txt'; a.click(); URL.revokeObjectURL(a.href);
+    });
+    render();
+  </script>
+</body>
+</html>
