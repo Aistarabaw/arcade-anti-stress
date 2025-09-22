@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Entrar — Arcade Anti-Stress</title>
+  <meta name="description" content="Área de acesso ao Arcade Anti-Stress." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg1:#93c5fd; --bg2:#f5f3ff; --ink:#0f172a; --muted:#64748b;
+      --card: rgba(255,255,255,.65); --stroke: rgba(255,255,255,.75);
+      --shadow: 0 20px 60px rgba(2,6,23,.18); --brand:#6366f1; --ok:#22c55e; --danger:#ef4444;
+    }
+    @media (prefers-color-scheme: dark){
+      :root{ --bg1:#0b1220; --bg2:#111827; --ink:#e5e7eb; --muted:#94a3b8;
+        --card: rgba(15,23,42,.6); --stroke: rgba(255,255,255,.12); --shadow: 0 20px 60px rgba(0,0,0,.45); --brand:#8b5cf6;}
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      color:var(--ink);
+      background: radial-gradient(1200px 800px at 30% -10%, var(--bg1), var(--bg2)) fixed;
+      display:grid; place-items:center;
+      padding: 24px 16px;
+    }
+    .wrap{
+      width:min(880px, 96vw);
+      display:grid; grid-template-columns: 1.1fr 0.9fr; gap:18px;
+    }
+    @media (max-width: 820px){
+      .wrap{ grid-template-columns: 1fr; }
+    }
+    .card{
+      background: var(--card); border: 1px solid var(--stroke);
+      border-radius: 22px; box-shadow: var(--shadow); overflow:hidden; position:relative;
+    }
+    .left{
+      padding: 26px 22px 22px;
+      display:grid; gap:14px; align-content:start;
+      min-height: 360px;
+      background:
+        radial-gradient(120px 120px at 20% 10%, rgba(255,255,255,.45), transparent 70%),
+        radial-gradient(160px 160px at 100% 20%, rgba(255,255,255,.25), transparent 70%),
+        var(--card);
+    }
+    .brand{display:flex; align-items:center; gap:10px; font-weight:800}
+    .brand .logo{font-size:22px}
+    .big{font-size:28px; font-weight:900; line-height:1.2}
+    .muted{color:var(--muted)}
+    .fields{display:grid; gap:10px; margin-top:8px}
+    .input{
+      display:flex; align-items:center; gap:10px; padding:12px 14px;
+      border-radius:14px; border:1px solid var(--stroke); background: rgba(255,255,255,.6);
+    }
+    .input input{all:unset; font-size:15px; width:100%}
+    .actions{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap}
+    .btn{
+      appearance:none; border:1px solid var(--stroke); background:#fff; color:#111827;
+      padding:12px 16px; border-radius:12px; cursor:pointer; font-weight:800;
+      box-shadow: var(--shadow); transition: transform .06s ease;
+    }
+    .btn:hover{ transform: translateY(-1px); }
+    .btn.primary{ background: linear-gradient(180deg, #a5b4fc, #818cf8); color:white; border-color: transparent; }
+    .btn.ghost{ background: transparent; color: var(--muted); }
+    .help{font-size:12px; color:var(--muted)}
+    .error{display:none; color:var(--danger); font-weight:700; font-size:14px}
+    .ok{display:none; color:var(--ok); font-weight:700; font-size:14px}
+    .right{
+      position:relative; min-height:360px; display:grid; place-items:center;
+      background:
+        radial-gradient(160px 160px at 80% 10%, rgba(255,255,255,.3), transparent 70%),
+        radial-gradient(140px 140px at 10% 80%, rgba(255,255,255,.2), transparent 70%),
+        linear-gradient(180deg, rgba(255,255,255,.35), rgba(255,255,255,.15));
+    }
+    .scene{position:absolute; inset:0; overflow:hidden}
+    /* bolhinhas relax a subir só como detalhe da página */
+    canvas#bg{position:absolute; inset:0; width:100%; height:100%}
+    .quote{
+      position:relative; z-index:1; padding:18px 20px; border-radius:18px;
+      background: rgba(255,255,255,.55); border:1px solid var(--stroke); max-width: 420px; text-align:center;
+      font-weight:700;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="card left" role="form" aria-label="Iniciar sessão">
+      <div class="brand"><div class="logo">✨</div><div>Arcade Anti-Stress</div></div>
+      <div class="big">Bem-vindo de volta 👋</div>
+      <div class="muted">Entra para começar a relaxar com os mini-jogos.</div>
+
+      <form id="form" class="fields" autocomplete="off">
+        <label class="input" aria-label="Utilizador">
+          <span>👤</span>
+          <input id="user" name="user" placeholder="Utilizador" inputmode="text" />
+        </label>
+        <label class="input" aria-label="Palavra-passe">
+          <span>🔒</span>
+          <input id="pass" name="pass" placeholder="Palavra-passe" type="password" />
+        </label>
+        <div class="actions">
+          <div class="help">Sem registos. Usa as credenciais fornecidas.</div>
+          <button class="btn primary" type="submit">Entrar</button>
+        </div>
+        <div class="error" id="err">Ups — credenciais inválidas.</div>
+        <div class="ok" id="ok">Perfeito! A entrar…</div>
+      </form>
+
+      <button id="toggle" class="btn ghost" type="button" aria-pressed="false">👁️ Mostrar palavra-passe</button>
+    </section>
+
+    <aside class="card right" aria-hidden="true">
+      <canvas id="bg"></canvas>
+      <div class="quote">“Respira fundo. Hoje vamos cuidar de ti.”</div>
+    </aside>
+  </div>
+
+  <script>
+    // Mini animação de bolhas no painel direito
+    (function(){
+      const c = document.getElementById('bg'); const ctx = c.getContext('2d');
+      function r(){ c.width = c.clientWidth * Math.min(2, devicePixelRatio||1); c.height = c.clientHeight * Math.min(2, devicePixelRatio||1); }
+      r(); new ResizeObserver(r).observe(c);
+      const N = 30, bubbles = Array.from({length:N},()=>({x:Math.random()*c.width, y:c.height+Math.random()*200, r:6+Math.random()*14, s:.4+.9*Math.random()}));
+      (function step(){
+        ctx.clearRect(0,0,c.width,c.height);
+        for(const b of bubbles){
+          ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,Math.PI*2);
+          const g = ctx.createRadialGradient(b.x-b.r*.4, b.y-b.r*.4, 1, b.x,b.y,b.r);
+          g.addColorStop(0,'rgba(255,255,255,.9)'); g.addColorStop(.6,'rgba(255,255,255,.35)'); g.addColorStop(1,'rgba(255,255,255,0)');
+          ctx.fillStyle = g; ctx.fill();
+          b.y -= b.s; if(b.y < -10){ b.y = c.height + 30; b.x = Math.random()*c.width; }
+        }
+        requestAnimationFrame(step);
+      })();
+    })();
+
+    // Login
+    const VALID_USER = "cheeto";
+    const VALID_PASS = "cerejinha";
+
+    const f = document.getElementById('form');
+    const user = document.getElementById('user');
+    const pass = document.getElementById('pass');
+    const err = document.getElementById('err');
+    const ok = document.getElementById('ok');
+    const toggle = document.getElementById('toggle');
+
+    toggle.addEventListener('click', () => {
+      const show = pass.type === 'password';
+      pass.type = show ? 'text' : 'password';
+      toggle.setAttribute('aria-pressed', String(show));
+      toggle.textContent = show ? '🙈 Esconder palavra-passe' : '👁️ Mostrar palavra-passe';
+    });
+
+    f.addEventListener('submit', (e) => {
+      e.preventDefault();
+      err.style.display = 'none';
+      ok.style.display = 'none';
+
+      const u = (user.value || '').trim();
+      const p = (pass.value || '').trim();
+
+      if (u === VALID_USER && p === VALID_PASS) {
+        ok.style.display = 'block';
+        // guardar “sessão” simples no storage
+        localStorage.setItem('aas_auth', 'ok');
+        localStorage.setItem('aas_user', u);
+        // pequena pausa para feedback
+        setTimeout(() => location.href = 'homepage_arcade_anti_stress_index.html', 450);
+      } else {
+        err.style.display = 'block';
+        // vibração suave (se suportado)
+        if (navigator.vibrate) navigator.vibrate(80);
+      }
+    });
+
+    // Se já está autenticado, vai direto
+    if (localStorage.getItem('aas_auth') === 'ok') {
+      // opcional: comentar a linha abaixo se não quiser auto-skip
+      // location.replace('index.html');
+    }
+  </script>
+</body>
+</html>

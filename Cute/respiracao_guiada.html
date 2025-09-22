@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Respiração Guiada — Arcade Anti‑Stress</title>
+  <meta name="description" content="Sessões de respiração guiada com padrões 4-7-8 e Box Breathing." />
+  <style>
+    :root{
+      --bg1:#eef2ff; --bg2:#f8fafc; --ink:#0f172a; --muted:#64748b; --brand:#14b8a6; --stroke: rgba(255,255,255,.7);
+      --card: rgba(255,255,255,.6); --shadow: 0 10px 30px rgba(2,6,23,.08);
+    }
+    @media (prefers-color-scheme: dark){
+      :root{ --bg1:#0b1220; --bg2:#0a0f1a; --ink:#e5e7eb; --muted:#94a3b8; --brand:#2dd4bf; --stroke: rgba(255,255,255,.12); --card: rgba(15,23,42,.5); --shadow: 0 12px 36px rgba(0,0,0,.35); }
+    }
+    *{box-sizing:border-box} html,body{height:100%}
+    body{margin:0; font-family: ui-rounded, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      color:var(--ink); background: radial-gradient(1200px 800px at 30% -10%, var(--bg1), var(--bg2)) fixed;
+      display:grid; grid-template-rows:auto 1fr auto; min-height:100%;}
+    header{display:flex; justify-content:space-between; align-items:center; gap:12px; padding:12px 16px; position:sticky; top:0; z-index:10;
+      backdrop-filter: saturate(120%) blur(8px); background: linear-gradient(to bottom, rgba(255,255,255,.4), transparent); border-bottom:1px solid var(--stroke)}
+    .brand{display:flex; gap:10px; align-items:center; font-weight:800}
+    main{display:grid; place-items:center; padding:16px}
+    .wrap{width:min(900px,96vw); display:grid; gap:16px}
+    .panel{padding:14px; border-radius:18px; background:var(--card); border:1px solid var(--stroke); box-shadow: var(--shadow);}
+    .controls{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
+    .pill{appearance:none; border:1px solid var(--stroke); background:rgba(255,255,255,.55); padding:10px 14px; border-radius:999px; cursor:pointer; font-weight:700}
+    .pill[aria-pressed="true"]{outline:3px solid rgba(20,184,166,.18)}
+    .meter{position:relative; height:360px; display:grid; place-items:center}
+    canvas{width:100%; height:360px;}
+    .hud{display:flex; gap:12px; justify-content:space-between; align-items:center; color:var(--muted); font-weight:700}
+    .big{font-size:28px; font-weight:900}
+    .label{font-size:14px; color:var(--muted)}
+    footer{padding:14px 16px; color:var(--muted); text-align:center; font-size:13px}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand"><span>🫁</span><span>Respiração Guiada</span></div>
+    <nav class="controls">
+      <button id="start" class="pill">▶️ Iniciar</button>
+      <button id="pause" class="pill">⏸️ Pausa</button>
+      <button id="reset" class="pill">🔄 Reiniciar</button>
+    </nav>
+  </header>
+  <main>
+    <div class="wrap">
+      <section class="panel">
+        <div class="controls">
+          <span class="label">Padrão:</span>
+          <button class="pill mode" data-mode="478" aria-pressed="true">4‑7‑8</button>
+          <button class="pill mode" data-mode="box">Box (4‑4‑4‑4)</button>
+          <button class="pill" id="sound">🔈 Som</button>
+          <button class="pill" id="vibe">📳 Vibração</button>
+          <label class="label" for="minutes" style="margin-left:8px">Duração:</label>
+          <select id="minutes" class="pill">
+            <option>3 min</option><option selected>5 min</option><option>10 min</option>
+          </select>
+        </div>
+      </section>
+      <section class="panel meter">
+        <canvas id="c"></canvas>
+        <div class="hud" style="position:absolute; inset:12px;">
+          <div>Fase: <span id="phase">Pronto</span></div>
+          <div class="big" id="count">0</div>
+          <div><span class="label">Tempo</span> <b id="left">05:00</b></div>
+        </div>
+      </section>
+      <section class="panel">
+        <b>Como funciona</b>
+        <p>Segue o círculo: <b>Inspira</b> enquanto expande, <b>Segura</b> quando para, <b>Expira</b> enquanto contrai. Podes ativar som para um sino suave a cada transição e vibração (telemóvel).</p>
+      </section>
+    </div>
+  </main>
+  <footer>Respira pelo nariz, ombros relaxados. Se te sentires tonto, pára e retoma mais tarde.</footer>
+
+  <script>
+    const c = document.getElementById('c'); const ctx = c.getContext('2d');
+    function resize(){ c.width = c.clientWidth * Math.min(2, devicePixelRatio||1); c.height = c.clientHeight * Math.min(2, devicePixelRatio||1); }
+    resize(); new ResizeObserver(resize).observe(c);
+
+    let mode = '478'; // '478' or 'box'
+    let running = false, paused = false;
+    let minutes = 5;
+    let remain = minutes*60;
+    let phase = 'Pronto';
+    let t = 0, phaseTime = 0;
+
+    const phaseEl = document.getElementById('phase');
+    const countEl = document.getElementById('count');
+    const leftEl = document.getElementById('left');
+
+    let cycles = 0;
+    let soundOn = false, vibeOn = false;
+    let audioCtx;
+
+    function fmt(s){ const m = Math.floor(s/60), r = s%60; return m+':'+String(r).padStart(2,'0'); }
+    function setMode(m){ mode = m; document.querySelectorAll('.mode').forEach(b=>b.setAttribute('aria-pressed', String(b.dataset.mode===m))); }
+    function setMinutes(val){ minutes = parseInt(val); remain = minutes*60; leftEl.textContent = fmt(remain); }
+    function bell(){ if(!soundOn) return; audioCtx = audioCtx || new (window.AudioContext||window.webkitAudioContext)(); const o=audioCtx.createOscillator(), g=audioCtx.createGain(); o.type='sine'; o.frequency.value=660; g.gain.value=0.0001; g.gain.exponentialRampToValueAtTime(0.08, audioCtx.currentTime+0.01); g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime+0.4); o.connect(g).connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime+0.45); }
+    function vibr(time=60){ if(!vibeOn || !navigator.vibrate) return; navigator.vibrate(time); }
+
+    function phases(){ return mode==='478' ? [
+      ['Inspira',4], ['Segura',7], ['Expira',8]
+    ] : [['Inspira',4], ['Segura',4], ['Expira',4], ['Segura',4]]; }
+
+    function nextPhase(){
+      const seq = phases();
+      t = 0; phaseTime = seq[idx][1];
+      phase = seq[idx][0];
+      phaseEl.textContent = phase;
+      bell(); vibr(40);
+      idx = (idx+1) % seq.length;
+      if(idx===0) { cycles++; countEl.textContent = cycles; }
+    }
+
+    let idx = 0;
+    function reset(){
+      running=false; paused=false; cycles=0; idx=0; phase='Pronto'; phaseEl.textContent=phase; countEl.textContent=0; remain=minutes*60; leftEl.textContent=fmt(remain); t=0; phaseTime=0;
+    }
+
+    function drawCircle(progress){
+      const w=c.width, h=c.height; const cx=w/2, cy=h/2; const base=46, grow=86;
+      ctx.clearRect(0,0,w,h);
+      // fundo suave
+      ctx.fillStyle = 'rgba(255,255,255,.12)';
+      ctx.beginPath(); ctx.arc(cx,cy, base+grow, 0, Math.PI*2); ctx.fill();
+      // círculo vivo
+      const R = base + grow * progress;
+      ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2);
+      const grd = ctx.createRadialGradient(cx-R*0.4, cy-R*0.4, 2, cx,cy,R);
+      grd.addColorStop(0,'rgba(255,255,255,.9)'); grd.addColorStop(.6,'rgba(255,255,255,.45)'); grd.addColorStop(1,'rgba(255,255,255,0)');
+      ctx.fillStyle = grd; ctx.fill();
+      ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255,255,255,.85)';
+      ctx.stroke();
+      // texto central
+      ctx.fillStyle = 'rgba(15,23,42,.8)';
+      if (matchMedia('(prefers-color-scheme: dark)').matches) ctx.fillStyle = 'rgba(229,231,235,.9)';
+      ctx.font = '700 26px ui-rounded, system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(phase, cx, cy);
+    }
+
+    let timerId;
+    function step(){
+      if(!running || paused) return;
+      const seq = phases();
+      if(phaseTime<=0){ phaseTime = seq[idx][1]; phase = seq[idx][0]; phaseEl.textContent = phase; bell(); vibr(40); }
+      t += 1/60; // 60fps
+      remain = Math.max(0, remain - 1/60);
+      leftEl.textContent = fmt(Math.round(remain));
+      const p = Math.min(1, t / phaseTime);
+      // progress visual: expande em Inspira, mantém em Segura, contrai em Expira
+      let visual;
+      if(phase==='Inspira') visual = p;
+      else if(phase==='Segura') visual = 1;
+      else if(phase==='Expira') visual = 1 - p;
+      else visual = 0;
+      drawCircle(visual);
+      if(p>=1){ t=0; idx=(idx+1)%seq.length; if(idx===0){ cycles++; countEl.textContent = cycles; } }
+      if(remain<=0){ running=false; bell(); vibr(120); return; }
+      timerId = requestAnimationFrame(step);
+    }
+
+    // Controles
+    document.getElementById('start').addEventListener('click', ()=>{ if(!running){ running=true; paused=false; step(); } });
+    document.getElementById('pause').addEventListener('click', ()=>{ paused = !paused; if(!paused) step(); });
+    document.getElementById('reset').addEventListener('click', reset);
+    document.getElementById('sound').addEventListener('click', (e)=>{ soundOn=!soundOn; e.currentTarget.textContent = soundOn? '🔊 Som':'🔈 Som'; if(soundOn){ bell(); }});
+    document.getElementById('vibe').addEventListener('click', (e)=>{ vibeOn=!vibeOn; e.currentTarget.setAttribute('aria-pressed', String(vibeOn)); });
+    document.querySelectorAll('.mode').forEach(b=> b.addEventListener('click', ()=> setMode(b.dataset.mode)));
+    document.getElementById('minutes').addEventListener('change', (e)=> setMinutes(e.target.value));
+
+    // init
+    setMinutes('5 min'.split(' ')[0]); reset(); drawCircle(0);
+  </script>
+</body>
+</html>

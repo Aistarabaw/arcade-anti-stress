@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Gato — Palavras de Conforto</title>
+  <meta name="description" content="Gera elogios e palavras de conforto aleatórias para aquecer o coração.">
+  <style>
+    :root{
+      --bg1:#fff7ed; --bg2:#fffbeb; --ink:#0f172a; --muted:#64748b; --stroke: rgba(255,255,255,.7);
+      --card: rgba(255,255,255,.8); --shadow: 0 10px 30px rgba(2,6,23,.08);
+      --accent:#f59e0b;
+    }
+    @media (prefers-color-scheme: dark){
+      :root{ --bg1:#0b1220; --bg2:#0a0f1a; --ink:#e5e7eb; --muted:#94a3b8; --stroke: rgba(255,255,255,.12); --card: rgba(15,23,42,.5); --shadow: 0 12px 36px rgba(0,0,0,.35); --accent:#fbbf24; }
+    }
+    *{box-sizing:border-box} html,body{height:100%}
+    body{margin:0; font-family: ui-rounded, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      color:var(--ink); background: radial-gradient(1200px 800px at 30% -10%, var(--bg1), var(--bg2)) fixed;
+      display:grid; grid-template-rows:auto 1fr auto; min-height:100%;}
+    header{display:flex; align-items:center; gap:12px; padding:12px 16px; position:sticky; top:0; z-index:10;
+      backdrop-filter: saturate(120%) blur(8px); background: linear-gradient(to bottom, rgba(255,255,255,.4), transparent); border-bottom:1px solid var(--stroke)}
+    .brand{display:flex; gap:10px; align-items:center; font-weight:800}
+    main{display:grid; place-items:center; padding:16px}
+    .wrap{width:min(900px,96vw); display:grid; gap:16px}
+    .panel{padding:18px; border-radius:18px; background:var(--card); border:1px solid var(--stroke); box-shadow: var(--shadow);}
+    .big{font-size:24px; font-weight:900; line-height:1.35}
+    .controls{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
+    .pill{appearance:none; border:1px solid var(--stroke); background:rgba(255,255,255,.65); padding:10px 14px; border-radius:999px; cursor:pointer; font-weight:700}
+    .quote{font-size:18px; padding:16px; border-radius:14px; background: rgba(255,255,255,.65); border:1px solid var(--stroke)}
+    .cat{font-size:64px; filter: drop-shadow(0 6px 12px rgba(0,0,0,.1));}
+    footer{padding:14px 16px; color:var(--muted); text-align:center; font-size:13px}
+  </style>
+</head>
+<body>
+  <header><div class="brand"><span class="cat">🐱</span><span>Gato — Palavras de Conforto</span></div></header>
+  <main>
+    <div class="wrap">
+      <section class="panel">
+        <div class="big">Toma um mimo do Gato ✨</div>
+        <p class="muted" style="color:var(--muted)">Clica para gerar uma mensagem fofinha e guarda as tuas favoritas.</p>
+        <div class="controls">
+          <button class="pill" id="new">💛 Gerar carinho</button>
+          <button class="pill" id="copy">📋 Copiar</button>
+          <button class="pill" id="save">⭐ Guardar favorito</button>
+        </div>
+      </section>
+      <section class="panel quote" id="out">O teu sorriso tem o dom de iluminar dias nublados.</section>
+      <section class="panel">
+        <b>Favoritos</b>
+        <ul id="fav" style="margin:8px 0 0 18px; padding:0; display:grid; gap:6px"></ul>
+      </section>
+    </div>
+  </main>
+  <footer>Lembra-te: mesmo nos dias difíceis, és importante e suficiente. 💛</footer>
+
+  <script>
+    const messages = [
+      "Tu és mais forte do que imaginas — e mais amada (por mim) do que sabes.",
+      "O teu coração é casa boa: quentinha, segura e gentil.",
+      "Fazes a diferença no mundo só por existires.",
+      "O teu sorriso tem o dom de iluminar dias nublados.",
+      "Mesmo a pequena versão de ti, já é incrível.",
+      "Respira: um passinho de cada vez é mais que suficiente.",
+      "És inteligente, criativa e persistentemente doce.",
+      "O teu esforço, mesmo invisível, conta muito.",
+      "Hoje és merecedora de descanso e cuidado.",
+      "Obrigada por seres tu. O mundo fica melhor."
+    ];
+    const out = document.getElementById('out');
+    function random(){ return messages[Math.floor(Math.random()*messages.length)]; }
+    document.getElementById('new').addEventListener('click', ()=>{ out.textContent = random(); if(navigator.vibrate) navigator.vibrate(12); });
+    document.getElementById('copy').addEventListener('click', async ()=>{ try{ await navigator.clipboard.writeText(out.textContent); }catch{} });
+    const favEl = document.getElementById('fav');
+    let fav = JSON.parse(localStorage.getItem('gatoFav')||'[]');
+    function renderFav(){ favEl.innerHTML = ''; fav.forEach((t,i)=>{ const li=document.createElement('li'); li.textContent = '• '+t; li.style.listStyle='none'; favEl.appendChild(li); }); }
+    renderFav();
+    document.getElementById('save').addEventListener('click', ()=>{
+      if(!fav.includes(out.textContent)){ fav.push(out.textContent); localStorage.setItem('gatoFav', JSON.stringify(fav)); renderFav(); }
+    });
+  </script>
+</body>
+</html>

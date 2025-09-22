@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Arcade Anti-Stress</title>
+  <meta name="description" content="Escolhe um mini-jogo relaxante: estoura bolhinhas, respiração guiada, e mais." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg1:#eef2ff; --bg2:#f8fafc; --ink:#0f172a; --muted:#64748b; --brand:#6366f1; --ring: rgba(99,102,241,.45);
+      --card: rgba(255,255,255,.6); --stroke: rgba(255,255,255,.7); --shadow: 0 10px 30px rgba(2,6,23,.08);
+    }
+    @media (prefers-color-scheme: dark){
+      :root{ --bg1:#0b1220; --bg2:#0a0f1a; --ink:#e5e7eb; --muted:#94a3b8; --brand:#8b5cf6; --ring:rgba(139,92,246,.45);
+        --card: rgba(15,23,42,.5); --stroke: rgba(255,255,255,.12); --shadow: 0 12px 36px rgba(0,0,0,.35); }
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      color:var(--ink);
+      background: radial-gradient(1200px 800px at 30% -10%, var(--bg1), var(--bg2)) fixed;
+      display:grid; grid-template-rows:auto 1fr auto; min-height:100%;
+    }
+    header{
+      position:sticky; top:0; z-index:10;
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      padding:14px 16px; backdrop-filter:saturate(120%) blur(8px);
+      background: linear-gradient(to bottom, rgba(255,255,255,.4), transparent);
+      border-bottom:1px solid var(--stroke);
+    }
+    .brand{display:flex; gap:10px; align-items:center; font-weight:800; letter-spacing:.2px}
+    .brand .logo{font-size:22px}
+    .searchbar{display:flex; gap:10px; align-items:center; flex:1; max-width:520px}
+    .input{
+      flex:1; display:flex; align-items:center; gap:10px; padding:10px 14px;
+      border-radius:999px; border:1px solid var(--stroke);
+      background: var(--card); box-shadow: var(--shadow)
+    }
+    .input input{all:unset; font-size:14px; width:100%; color:var(--ink)}
+
+    main{padding:24px 16px 28px}
+    .grid{
+      --w: min(1200px, 96vw);
+      margin:0 auto;
+      display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap:24px; width:var(--w)
+    }
+    .card{
+      position:relative; display:flex; flex-direction:column; gap:12px;
+      padding:18px; border-radius:20px; background: var(--card);
+      border:1px solid var(--stroke); box-shadow: var(--shadow);
+      transition: transform .08s ease, box-shadow .2s ease, border-color .2s
+    }
+    .card:hover{ transform: translateY(-3px); box-shadow: 0 14px 44px rgba(2,6,23,.12);}
+    .thumb{
+      height:180px; border-radius:16px; overflow:hidden; position:relative; isolation:isolate; border:1px solid var(--stroke)
+    }
+    .thumb canvas, .thumb .demo{position:absolute; inset:0}
+    .thumb img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover;}
+    .title{font-weight:800; font-size:1.1rem}
+    .meta{color:var(--muted); font-size:14px}
+    .pill{
+      align-self:flex-start; padding:10px 16px; border-radius:999px;
+      border:1px solid var(--stroke); background:rgba(255,255,255,.5);
+      font-weight:700; text-decoration:none; color:inherit; box-shadow: var(--shadow)
+    }
+    .pill[aria-disabled="true"]{opacity:.6; cursor:not-allowed}
+    footer{padding:16px 16px; color:var(--muted); text-align:center; font-size:14px}
+  </style>
+</head>
+
+<!-- Gate simples: requer sessão -->
+<script>
+  (function(){
+    try {
+      var ok = localStorage.getItem('aas_auth') === 'ok';
+      if (!ok) location.replace('login.html');
+    } catch(e) {
+      // se storage falhar, também manda para login
+      location.replace('login.html');
+    }
+  })();
+</script>
+
+<body>
+  <header>
+    <div class="brand" aria-label="Arcade Anti-Stress">
+      <div class="logo">✨</div>
+      <div>Arcade Anti-Stress</div>
+    </div>
+    <div class="searchbar" role="search">
+      <label class="input" aria-label="Pesquisar jogos">
+        <span aria-hidden="true">🔎</span>
+        <input id="q" placeholder="Pesquisar jogos… (ex.: bolhas, respiração, gato)" />
+      </label>
+    </div>
+  </header>
+
+  <main>
+    <!-- Jogos -->
+    <section class="grid" id="grid" aria-label="Lista de jogos">
+      <!-- Jogo 1: Bolhinhas -->
+      <article class="card" data-title="Estoura as Bolhinhas" data-tags="bolhas relax som">
+        <div class="thumb">
+          <div class="demo" id="demo-bubbles" aria-hidden="true"></div>
+          <img src="bolhinhas.jpg" alt="Estoura as Bolhinhas" onerror="this.style.display='none'">
+        </div>
+        <div class="title">Estoura as Bolhinhas</div>
+        <div class="meta">Pop zen com som opcional · 3 min</div>
+        <a class="pill" href="jogo_anti_stress.html">▶️ Jogar</a>
+      </article>
+
+    <!-- Jogo 2: Respiração Guiada -->
+    <article class="card" data-title="Respiração Guiada" data-tags="respiracao mindfulness box breathing" aria-describedby="soon1">
+      <div class="thumb">
+        <img src="respiracao.jpg" alt="Respiração Guiada" onerror="this.style.display='none'">
+      </div>
+      <div class="title">Respiração Guiada</div>
+      <div class="meta" id="soon1">4-7-8 e box breathing</div>
+      <a class="pill" href="respiracao_guiada.html">▶️ Jogar</a>
+    </article>
+
+    <!-- Jogo 3: Zen Clicker -->
+    <article class="card" data-title="Zen Clicker" data-tags="clicker minimal foco">
+      <div class="thumb">
+        <img src="clicker.jpg" alt="Zen Clicker" onerror="this.style.display='none'">
+      </div>
+      <div class="title">Zen Clicker</div>
+      <div class="meta">Clica no ritmo</div>
+      <a class="pill" href="zen_clicker.html">▶️ Jogar</a>
+    </article>
+
+
+    <!-- Secções adicionais -->
+    <section class="grid" id="seccoes" aria-label="Secções especiais" style="margin-top:8px">
+      <article class="card" data-title="Secção MuhMuh" data-tags="muhmuh secao especial">
+        <div class="thumb" style="display:grid;place-items:center;font-size:56px">
+          <img src="muhmuh.jpg" alt="MuhMuh" onerror="this.style.display='none'">🐮
+        </div>
+        <div class="title">Secção MuhMuh</div>
+        <div class="meta">Pote da gratidão — escreve as coisas boas do teu dia.</div>
+        <a class="pill" href="muhmuh.html">Abrir</a>
+      </article>
+
+      <article class="card" data-title="Chubby" data-tags="chubby secao especial">
+        <div class="thumb" style="display:grid;place-items:center;font-size:56px">
+          <img src="chubby.jpg" alt="Chubby" onerror="this.style.display='none'">🐷
+        </div>
+        <div class="title">Chubby</div>
+        <div class="meta">Música relax: player com embeds do Spotify.</div>
+        <a class="pill" href="chubby.html">Abrir</a>
+      </article>
+
+      <article class="card" data-title="Gato" data-tags="gato secao especial carinho elogios">
+        <div class="thumb" style="display:grid;place-items:center;font-size:56px">
+          <img src="gato.jpg" alt="Gato" onerror="this.style.display='none'">🐱
+        </div>
+        <div class="title">Gato</div>
+        <div class="meta">Gerador de palavras de conforto e elogios.</div>
+        <a class="pill" href="gato.html">Abrir</a>
+      </article>
+    </section>
+  </main>
+
+  <footer>
+    Dica: carrega em <b>/</b> para focar a pesquisa · Usa auscultadores e o modo escuro do teu sistema 💫
+  </footer>
+
+  <script>
+    // Pesquisa/filtrar
+    const q = document.getElementById('q');
+    const cards = [...document.querySelectorAll('.card')];
+    function filter(){
+      const v = (q.value || '').trim().toLowerCase();
+      cards.forEach(c=>{
+        const t = (c.dataset.title + ' ' + (c.dataset.tags||'')).toLowerCase();
+        c.style.display = t.includes(v) ? '' : 'none';
+      });
+    }
+    q.addEventListener('input', filter);
+    document.addEventListener('keydown', (e)=>{ if(e.key === '/'){ e.preventDefault(); q.focus(); }});
+
+    // Pequenas demos nas miniaturas
+    // Bolhinhas
+    (function bubblesDemo(){
+      const box = document.getElementById('demo-bubbles'); if(!box) return;
+      const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d'); box.appendChild(canvas);
+      const DPR = Math.min(2, window.devicePixelRatio || 1);
+      function resize(){ canvas.width = box.clientWidth*DPR; canvas.height= box.clientHeight*DPR; }
+      resize();
+      const bubbles = Array.from({length:16},()=>({x:Math.random()*canvas.width,y:canvas.height+Math.random()*80,r:6+Math.random()*10,s: .4+.8*Math.random()}));
+      function step(){
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        for(const b of bubbles){
+          ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,Math.PI*2);
+          const g = ctx.createRadialGradient(b.x- b.r*.4, b.y- b.r*.4, 1, b.x,b.y,b.r);
+          g.addColorStop(0,'rgba(255,255,255,.95)'); g.addColorStop(.5,'rgba(255,255,255,.35)'); g.addColorStop(1,'rgba(255,255,255,0)');
+          ctx.fillStyle = g; ctx.fill();
+          b.y -= b.s; if(b.y < -10) { b.y = canvas.height + 20; b.x = Math.random()*canvas.width; }
+        }
+        requestAnimationFrame(step);
+      }
+      step();
+      new ResizeObserver(resize).observe(box);
+    })();
+
+    // Respiração: círculo que expande/contrai
+    (function breathDemo(){
+      const el = document.getElementById('demo-breath'); if(!el) return; const ctx = el.getContext('2d');
+      function resize(){ el.width = el.clientWidth * 2; el.height = el.clientHeight * 2; } resize();
+      let t=0; function step(){ t+=0.02; const w=el.width, h=el.height; ctx.clearRect(0,0,w,h);
+        const r = (Math.sin(t)+1)/2; const R = 26 + r*32; ctx.beginPath(); ctx.arc(w/2,h/2,R,0,Math.PI*2);
+        ctx.fillStyle='rgba(255,255,255,.55)'; ctx.fill(); ctx.strokeStyle='rgba(255,255,255,.8)'; ctx.lineWidth=2; ctx.stroke(); requestAnimationFrame(step);} step();
+      new ResizeObserver(resize).observe(el);
+    })();
+
+    // Clicker: barra que sobe/desce
+    (function clickerDemo(){
+      const el = document.getElementById('demo-clicker'); if(!el) return; const ctx = el.getContext('2d');
+      function resize(){ el.width = el.clientWidth * 2; el.height = el.clientHeight * 2; } resize();
+      let t=0; function step(){ t+=0.03; const w=el.width, h=el.height; ctx.clearRect(0,0,w,h);
+        const y = h*(0.2 + 0.6*(0.5+0.5*Math.sin(t)));
+        ctx.fillStyle='rgba(255,255,255,.7)'; ctx.fillRect(w*0.1,y, w*0.8, 10);
+        requestAnimationFrame(step); } step();
+      new ResizeObserver(resize).observe(el);
+    })();
+  </script>
+</body>
+</html>
